@@ -32,15 +32,23 @@ public sealed class TmlLoaderEntrypoint
 
         try
         {
+            var startupTimer = System.Diagnostics.Stopwatch.StartNew();
+            void Mark(string stage) => Console.WriteLine($"BOOTSTRAP_STAGE {stage}; elapsedMs={startupTimer.ElapsedMilliseconds}");
+            Mark("dependency-resolver");
             var assemblyDirectory = Path.GetDirectoryName(Path.GetFullPath(assemblyPath))!;
             var monoModPath = Path.Combine(AppContext.BaseDirectory, "MonoMod.Android");
             Environment.SetEnvironmentVariable("MONOMOD_PATH", monoModPath);
             using var dependencies = new GameAssemblyResolver(assemblyDirectory, monoModPath);
             Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(Path.GetFullPath(assemblyPath));
+            Mark("assembly-loaded");
             ApplyAndroidCompatibilityPatch(assembly);
+            Mark("compatibility-patch");
             using var platformServices = AndroidPlatformServiceProxy.TryConfigure(assembly, androidBridge);
+            Mark("platform-services");
             using var mobilePatches = IsAndroidRuntime() ? LoadBundledPatches(assembly, androidBridge) : null;
+            Mark("bundled-patches");
             using var mobileControls = IsAndroidRuntime() ? LoadBundledControls() : null;
+            Mark("mobile-controls");
             using var importedCompatibility = IsAndroidRuntime()
                 ? new ImportedGameCompatibility(assembly, androidBridge, platformServices is null)
                 : null;
@@ -51,6 +59,7 @@ public sealed class TmlLoaderEntrypoint
                 throw new BootstrapStageException(BootstrapStage.Runtime, "tModLoader assembly has no entry point.");
             }
 
+            Mark("game-entrypoint");
             object? result = entryPoint.GetParameters().Length == 0
                 ? entryPoint.Invoke(null, null)
                 : entryPoint.Invoke(null, new object?[] { arguments });
