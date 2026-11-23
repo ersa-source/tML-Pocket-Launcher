@@ -38,6 +38,9 @@ try
         throw new InvalidOperationException("The imported tModLoader or Terraria package is incomplete.");
     }
 
+    Console.WriteLine($"HOST_RUNTIME {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}; arch={System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}");
+    Console.WriteLine($"HOST_MEMORY managed={GC.GetTotalMemory(false)}; available={GC.GetGCMemoryInfo().TotalAvailableMemoryBytes}");
+    Console.WriteLine($"HOST_CONTENT images={Directory.Exists(Path.Combine(contentRoot, "Images"))}; gameAssembly={Path.GetFileName(assemblyPath)}");
     bridge.SetStartupStatus("正在进入游戏", "正在加载 tModLoader，等待游戏画面…", -1);
     return new MobileLauncher.Bootstrap.GameBootstrap(bridge).LaunchManagedGame(assemblyPath, args);
 }
