@@ -570,6 +570,7 @@ internal class LauncherController(private val context: Context) {
                                 var count = 0
                                 var content = false
                                 var executable = false
+                                var executableHash: String? = null
                                 while (entries.hasMoreElements()) {
                                     if (cancelled()) throw InterruptedIOException("已取消")
                                     val entry = entries.nextElement()
@@ -577,10 +578,28 @@ internal class LauncherController(private val context: Context) {
                                     require(count <= 100_000) { "ZIP 包含过多文件" }
                                     val path = entry.name.replace(92.toChar(), '/').trimStart('/').lowercase(java.util.Locale.ROOT)
                                     if (path.startsWith("content/") || path.contains("/content/")) content = true
-                                    if (path == "terraria.exe" || path.endsWith("/terraria.exe")) executable = true
+                                    if (!entry.isDirectory && (path == "terraria.exe" || path.endsWith("/terraria.exe"))) {
+                                        executable = true
+                                        require(executableHash == null) { "Multiple Terraria executables in ZIP" }
+                                        val digest = java.security.MessageDigest.getInstance("SHA-256")
+                                        zip.getInputStream(entry).use { input ->
+                                            val buffer = ByteArray(64 * 1024)
+                                            var total = 0L
+                                            while (true) {
+                                                if (cancelled()) throw InterruptedIOException("已取消")
+                                                val n = input.read(buffer)
+                                                if (n < 0) break
+                                                total += n
+                                                require(total <= 64L * 1024 * 1024) { "Terraria.exe exceeds inspection limit" }
+                                                digest.update(buffer, 0, n)
+                                            }
+                                        }
+                                        executableHash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+                                    }
                                 }
                                 JSONObject().put("entries", count).put("hasContent", content).put("hasExecutable", executable)
-                                    .put("message", if (content && executable) "Архив похож на Windows-установку Terraria. Структура не подтверждает лицензию; установка не выполнена." else "В ZIP не найдены одновременно Content и Terraria.exe.")
+                                    .put("sha256", executableHash ?: "").put("referenceMatch", executableHash == "2d64ea3ad8bbcf209c9dcec1a074befe054c52b665cbf77023d15b92e7eec9c8")
+                                    .put("message", if (content && executable) "SHA-256: $executableHash. Совпадение с предварительным образцом: ${executableHash == "2d64ea3ad8bbcf209c9dcec1a074befe054c52b665cbf77023d15b92e7eec9c8"}. Установка не выполнена." else "В ZIP не найдены одновременно Content и Terraria.exe.")
                             }
                         }
                         "terraria-gog" -> {
