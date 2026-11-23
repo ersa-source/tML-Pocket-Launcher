@@ -51,8 +51,8 @@ export function useNativeActions(launcher: LauncherContextValue) {
       complete: (imported) => {
         if (!imported) return;
         if (kind === 'terraria-gog-zip') {
-          const report = imported as { entries?: number; hasContent?: boolean; hasExecutable?: boolean; message?: string };
-          openDialog({ title: 'Диагностика Terraria ZIP', description: report.message || 'Проверка завершена.', body: <p>{`Файлов: ${report.entries ?? 0}; Content: ${report.hasContent ? 'найден' : 'не найден'}; Terraria.exe: ${report.hasExecutable ? 'найден' : 'не найден'}.`}</p> });
+          const report = imported as { entries?: number; hasContent?: boolean; hasExecutable?: boolean; sha256?: string; referenceMatch?: boolean; message?: string };
+          openDialog({ title: 'Диагностика Terraria ZIP', description: report.message || 'Проверка завершена.', body: <div className="native-stack"><dl className="detail-list"><dt>Файлов</dt><dd>{report.entries ?? 0}</dd><dt>Content</dt><dd>{report.hasContent ? 'Найден' : 'Не найден'}</dd><dt>Terraria.exe</dt><dd>{report.hasExecutable ? 'Найден' : 'Не найден'}</dd><dt>SHA-256</dt><dd style={{ overflowWrap: 'anywhere' }}>{report.sha256 || '—'}</dd><dt>Совпадение с образцом</dt><dd>{report.referenceMatch ? 'Да' : 'Нет'}</dd></dl><p>Проверка не изменяет установленные файлы.</p></div> });
         } else if (kind === 'terraria-steam') {
           openDialog({
             title: t('Steam 资源已导入'),
