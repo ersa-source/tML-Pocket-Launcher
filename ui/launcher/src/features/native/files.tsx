@@ -12,6 +12,7 @@ export interface FileSelection {
 export type FileKind =
   | 'terraria-steam'
   | 'terraria-gog'
+  | 'terraria-gog-zip'
   | 'tml'
   | 'mod'
   | 'patch'
@@ -53,6 +54,7 @@ interface BrowseOptions {
 const labels: Record<FileKind, string> = {
   'terraria-steam': 'Steam 资源 · ZIP',
   'terraria-gog': 'GOG 安装包 · .sh',
+  'terraria-gog-zip': 'GOG Windows ZIP',
   tml: 'tModLoader · ZIP',
   mod: '模组 · .tmod',
   patch: '补丁 · JSON',

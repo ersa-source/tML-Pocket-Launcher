@@ -502,6 +502,7 @@ internal class LauncherController(private val context: Context) {
             ) {
                 "不支持的导入类型"
             }
+            var inspection: JSONObject? = null
             uris.forEachIndexed { index, uri ->
                 progress("正在读取文件 ${index + 1} / ${uris.size}…", -1)
                 val file = File.createTempFile("package-", ".import", context.cacheDir)
@@ -564,7 +565,7 @@ internal class LauncherController(private val context: Context) {
                                 progress = ::progress,
                             )
                         "terraria-gog-zip" -> {
-                            java.util.zip.ZipFile(file).use { zip ->
+                            inspection = java.util.zip.ZipFile(file).use { zip ->
                                 val entries = zip.entries()
                                 var count = 0
                                 var content = false
@@ -634,7 +635,7 @@ internal class LauncherController(private val context: Context) {
                     file.delete()
                 }
             }
-            true
+            inspection ?: true
         }
     }
 
