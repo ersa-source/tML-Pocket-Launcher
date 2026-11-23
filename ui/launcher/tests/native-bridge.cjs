@@ -1205,10 +1205,11 @@ const base = process.env.LAUNCHER_TEST_URL || 'http://127.0.0.1:8769';
     await page.getByRole('option', { name: '默认', exact: true }).click();
     await page.waitForFunction(() => window.nativeFixture.preferences.themeStyle === 'default');
     assert.equal(await page.locator('html').getAttribute('data-skin'), null);
-    const lightDownloadColors = await checkDownloadTheme();
-    assert.equal(lightDownloadColors[2], 'light');
-    assert.notDeepEqual(lightDownloadColors, tmlDownloadColors);
-    assert.notDeepEqual(lightDownloadColors, darkDownloadColors);
+    // Changing the skin does not change the independently saved dark/light theme.
+    const defaultDownloadColors = await checkDownloadTheme();
+    assert.equal(defaultDownloadColors[2], 'dark');
+    assert.equal(await page.evaluate(() => window.nativeFixture.preferences.theme), 'dark');
+    assert.notDeepEqual(defaultDownloadColors, tmlDownloadColors);
     assert.equal(
       await page.evaluate(() => window.nativeFixture.preferences.renderScale),
       75,
