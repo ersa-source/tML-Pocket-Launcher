@@ -41,6 +41,15 @@ public sealed class GameAssemblyResolver : IDisposable
             }
         }
 
+        // Direct exact matches already outrank every indexed candidate.
+        // Avoid scanning and probing the entire Libraries tree until needed.
+        var directMatch = candidates.FirstOrDefault(candidate =>
+            MatchesAssembly(candidate, requestedAssembly, requireExactVersion: true));
+        if (directMatch is not null)
+        {
+            return directMatch;
+        }
+
         if (_assemblyIndex.Value.TryGetValue(assemblyFile, out var indexedCandidates))
         {
             candidates.AddRange(indexedCandidates);
