@@ -46,12 +46,14 @@ public sealed class GameAssemblyResolver : IDisposable
             candidates.AddRange(indexedCandidates);
         }
 
+        candidates = candidates.Distinct(StringComparer.Ordinal).ToList();
         var resolvedPath = candidates.FirstOrDefault(candidate =>
             MatchesAssembly(candidate, requestedAssembly, requireExactVersion: true));
         resolvedPath ??= candidates.FirstOrDefault(candidate =>
             MatchesAssembly(candidate, requestedAssembly, requireExactVersion: false));
         if (resolvedPath is null)
         {
+            Console.WriteLine($"[MobileLauncher.Bootstrap] Unresolved dependency: {requestedAssembly.FullName}; candidates={candidates.Count}");
             return null;
         }
 
@@ -95,6 +97,7 @@ public sealed class GameAssemblyResolver : IDisposable
                 group => group
                     .Select(file => file.Path)
                     .OrderBy(GetAssemblyCandidatePriority)
+                    .ThenBy(path => path, StringComparer.Ordinal)
                     .ToArray(),
                 StringComparer.OrdinalIgnoreCase);
     }
