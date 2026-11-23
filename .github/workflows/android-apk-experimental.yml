@@ -31,13 +31,16 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: ui/launcher/package-lock.json
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
       - name: Install Android SDK and NDK dependencies
         shell: pwsh
         run: |
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0" "cmake;3.22.1" "ndk;30.0.14904198 rc1"
-          if ($LASTEXITCODE -ne 0) { throw "Android SDK/NDK installation failed. Check the pinned NDK revision." }
+          $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { $env:ANDROID_SDK_ROOT }
+          if (-not $sdk -or -not (Test-Path $sdk)) { throw "Windows runner has no Android SDK directory" }
+          $manager = Get-ChildItem (Join-Path $sdk 'cmdline-tools') -Filter sdkmanager.bat -Recurse -File |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $manager) { throw "sdkmanager.bat not found in $sdk" }
+          & $manager --sdk_root=$sdk --install "platforms;android-37" "build-tools;37.0.0" "cmake;3.22.1" "ndk;30.0.14904198 rc1"
+          if ($LASTEXITCODE -ne 0) { throw "Android SDK/NDK installation failed. Check pinned package availability." }
       - name: Verify native sources
         shell: pwsh
         run: ./scripts/checks/check-native-sources.ps1
