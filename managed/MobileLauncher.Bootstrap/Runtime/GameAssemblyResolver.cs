@@ -1,3 +1,5 @@
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Reflection;
 using System.Runtime.Loader;
 
@@ -139,30 +141,29 @@ public sealed class GameAssemblyResolver : IDisposable
 
     private static bool IsReferenceAssembly(string path)
     {
-        var probeContext = new AssemblyLoadContext(
-            $"MobileLauncher.Bootstrap.ReferenceProbe.{Guid.NewGuid():N}",
-            isCollectible: true);
         try
         {
-            // Probe from bytes so collectible assembly inspection never locks the
-            // user's package files on Windows while the context awaits GC.
             using var stream = File.OpenRead(path);
-            probeContext.LoadFromStream(stream);
+            using var pe = new PEReader(stream);
+            if (!pe.HasMetadata) return true;
+            var metadata = pe.GetMetadataReader();
+            if (!metadata.IsAssembly) return true;
+            foreach (var handle in metadata.GetAssemblyDefinition().GetCustomAttributes())
+            {
+                var attribute = metadata.GetCustomAttribute(handle);
+                if (attribute.Constructor.Kind != HandleKind.MemberReference) continue;
+                var member = metadata.GetMemberReference((MemberReferenceHandle)attribute.Constructor);
+                if (member.Parent.Kind != HandleKind.TypeReference) continue;
+                var type = metadata.GetTypeReference((TypeReferenceHandle)member.Parent);
+                if (metadata.GetString(type.Name) == "ReferenceAssemblyAttribute" &&
+                    metadata.GetString(type.Namespace) == "System.Runtime.CompilerServices")
+                    return true;
+            }
             return false;
         }
-        catch (BadImageFormatException exception)
+        catch (Exception exception) when (exception is IOException or BadImageFormatException)
         {
-            return exception.Message.Contains(
-                "Reference assemblies cannot be loaded",
-                StringComparison.OrdinalIgnoreCase);
-        }
-        catch (Exception exception) when (exception is IOException or FileLoadException)
-        {
-            return false;
-        }
-        finally
-        {
-            probeContext.Unload();
+            return true;
         }
     }
 
