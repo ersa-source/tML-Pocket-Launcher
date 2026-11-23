@@ -50,6 +50,20 @@ jobs:
       - name: Verify native sources
         shell: pwsh
         run: ./scripts/checks/check-native-sources.ps1
+      - name: Prepare precompiled tModLoader build references
+        shell: pwsh
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'tModLoader.zip'
+          ./scripts/build/prepare-default-tml.ps1 -OutputPath $archive
+          $extract = Join-Path $env:RUNNER_TEMP 'tModLoader-reference'
+          New-Item -ItemType Directory -Path $extract -Force | Out-Null
+          Expand-Archive -LiteralPath $archive -DestinationPath $extract -Force
+          $targets = @(Get-ChildItem -LiteralPath $extract -Filter tMLMod.targets -File -Recurse)
+          if ($targets.Count -ne 1) { throw "Expected one tMLMod.targets in official release, found $($targets.Count)" }
+          $tmlRoot = $targets[0].Directory.FullName
+          if (-not (Test-Path (Join-Path $tmlRoot 'tModLoader.dll'))) { throw "tModLoader.dll missing from extracted release" }
+          "TML_REFERENCE_ROOT=$tmlRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Using official tModLoader compile-only references from $tmlRoot"
       - name: Build debug APK
         shell: pwsh
         working-directory: android
