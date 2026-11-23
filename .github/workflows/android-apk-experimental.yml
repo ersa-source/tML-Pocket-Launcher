@@ -36,11 +36,17 @@ jobs:
         run: |
           $sdk = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { $env:ANDROID_SDK_ROOT }
           if (-not $sdk -or -not (Test-Path $sdk)) { throw "Windows runner has no Android SDK directory" }
-          $manager = Get-ChildItem (Join-Path $sdk 'cmdline-tools') -Filter sdkmanager.bat -Recurse -File |
-            Select-Object -First 1 -ExpandProperty FullName
+          $manager = Join-Path $sdk 'cmdline-tools/latest/bin/sdkmanager.bat'
+          if (-not (Test-Path $manager)) {
+            $manager = Get-ChildItem (Join-Path $sdk 'cmdline-tools') -Filter sdkmanager.bat -Recurse -File |
+              Select-Object -First 1 -ExpandProperty FullName
+          }
           if (-not $manager) { throw "sdkmanager.bat not found in $sdk" }
-          & $manager --sdk_root=$sdk --install "platforms;android-37" "build-tools;37.0.0" "cmake;3.22.1" "ndk;30.0.14904198 rc1"
-          if ($LASTEXITCODE -ne 0) { throw "Android SDK/NDK installation failed. Check pinned package availability." }
+          Write-Host "Using sdkmanager: $manager"
+          & $manager --sdk_root=$sdk --channel=3 --list
+          if ($LASTEXITCODE -ne 0) { throw "Unable to list SDK packages" }
+          & $manager --sdk_root=$sdk --channel=3 --install "platforms;android-37" "build-tools;37.0.0" "cmake;3.22.1" "ndk;30.0.14904198 rc1"
+          if ($LASTEXITCODE -ne 0) { throw "Android SDK/NDK installation failed. See available packages above." }
       - name: Verify native sources
         shell: pwsh
         run: ./scripts/checks/check-native-sources.ps1
