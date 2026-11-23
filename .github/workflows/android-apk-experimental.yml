@@ -45,7 +45,7 @@ jobs:
           Write-Host "Using sdkmanager: $manager"
           & $manager --sdk_root=$sdk --channel=3 --list
           if ($LASTEXITCODE -ne 0) { throw "Unable to list SDK packages" }
-          & $manager --sdk_root=$sdk --channel=3 --install "platforms;android-37" "build-tools;37.0.0" "cmake;3.22.1" "ndk;30.0.14904198 rc1"
+          & $manager --sdk_root=$sdk --channel=3 --install "platforms;android-37.0" "build-tools;37.0.0" "cmake;3.22.1" "ndk;30.0.14904198"
           if ($LASTEXITCODE -ne 0) { throw "Android SDK/NDK installation failed. See available packages above." }
       - name: Verify native sources
         shell: pwsh
