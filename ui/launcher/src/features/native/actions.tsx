@@ -25,7 +25,7 @@ export function useNativeActions(launcher: LauncherContextValue) {
   const tasks = () => openWorkspace('downloads');
   const versions = () => openWorkspace('resource-versions');
   const importFile = (
-    kind: 'terraria-steam' | 'terraria-gog' | 'tml' | 'mod' | 'patch' | 'pack',
+    kind: 'terraria-steam' | 'terraria-gog' | 'terraria-gog-zip' | 'tml' | 'mod' | 'patch' | 'pack',
   ) => {
     browse({
       kind,
@@ -50,7 +50,10 @@ export function useNativeActions(launcher: LauncherContextValue) {
         }),
       complete: (imported) => {
         if (!imported) return;
-        if (kind === 'terraria-steam') {
+        if (kind === 'terraria-gog-zip') {
+          const report = imported as { entries?: number; hasContent?: boolean; hasExecutable?: boolean; message?: string };
+          openDialog({ title: 'GOG Windows ZIP · проверка', description: report.message || 'Проверка завершена.', body: <p>{`Файлов: ${report.entries ?? 0}; Content: ${report.hasContent ? 'найден' : 'не найден'}; Terraria.exe: ${report.hasExecutable ? 'найден' : 'не найден'}.`}</p> });
+        } else if (kind === 'terraria-steam') {
           openDialog({
             title: t('Steam 资源已导入'),
             description: t(
@@ -94,6 +97,7 @@ export function useNativeActions(launcher: LauncherContextValue) {
             </div>
             <Button onClick={() => importFile('terraria-steam')}>{t('选择 ZIP')}</Button>
           </div>
+          <div className="resource-row"><div className="resource-copy"><h3>GOG · Windows ZIP</h3><p>Проверка файлов Windows Terraria без установки или обхода лицензии.</p></div><Button onClick={() => importFile('terraria-gog-zip')}>Проверить ZIP</Button></div>
           <div className="resource-row">
             <div className="resource-copy">
               <h3>GOG · Linux .sh</h3>

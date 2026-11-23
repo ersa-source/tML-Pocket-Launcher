@@ -493,6 +493,7 @@ internal class LauncherController(private val context: Context) {
                             "terraria",
                             "terraria-steam",
                             "terraria-gog",
+                            "terraria-gog-zip",
                             "tml",
                             "mod",
                             "patch",
@@ -562,6 +563,25 @@ internal class LauncherController(private val context: Context) {
                                 cancelled = cancelled,
                                 progress = ::progress,
                             )
+                        "terraria-gog-zip" -> {
+                            java.util.zip.ZipFile(file).use { zip ->
+                                val entries = zip.entries()
+                                var count = 0
+                                var content = false
+                                var executable = false
+                                while (entries.hasMoreElements()) {
+                                    if (cancelled()) throw InterruptedIOException("已取消")
+                                    val entry = entries.nextElement()
+                                    count++
+                                    require(count <= 100_000) { "ZIP 包含过多文件" }
+                                    val path = entry.name.replace(92.toChar(), '/').trimStart('/').lowercase(java.util.Locale.ROOT)
+                                    if (path.startsWith("content/") || path.contains("/content/")) content = true
+                                    if (path == "terraria.exe" || path.endsWith("/terraria.exe")) executable = true
+                                }
+                                JSONObject().put("entries", count).put("hasContent", content).put("hasExecutable", executable)
+                                    .put("message", if (content && executable) "Архив похож на Windows-установку Terraria. Структура не подтверждает лицензию; установка не выполнена." else "В ZIP не найдены одновременно Content и Terraria.exe.")
+                            }
+                        }
                         "terraria-gog" -> {
                             val archive = stores.importGog(file, cancelled, ::progress)
                             try {

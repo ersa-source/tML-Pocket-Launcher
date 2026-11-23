@@ -166,6 +166,7 @@ internal class FileBrowserRepository(private val roots: List<BrowserRoot>) {
                 "terraria-steam",
                 "tml" -> setOf("zip")
                 "terraria-gog" -> setOf("sh")
+                "terraria-gog-zip" -> setOf("zip")
                 "mod" -> setOf("tmod")
                 "patch",
                 "pack",
