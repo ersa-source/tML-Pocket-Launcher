@@ -42,7 +42,17 @@ try
     Console.WriteLine($"HOST_MEMORY managed={GC.GetTotalMemory(false)}; available={GC.GetGCMemoryInfo().TotalAvailableMemoryBytes}");
     Console.WriteLine($"HOST_CONTENT images={Directory.Exists(Path.Combine(contentRoot, "Images"))}; gameAssembly={Path.GetFileName(assemblyPath)}");
     bridge.SetStartupStatus("正在进入游戏", "正在加载 tModLoader，等待游戏画面…", -1);
-    return new MobileLauncher.Bootstrap.GameBootstrap(bridge).LaunchManagedGame(assemblyPath, args);
+    var sessionTimer = System.Diagnostics.Stopwatch.StartNew();
+    try
+    {
+        var exitCode = new MobileLauncher.Bootstrap.GameBootstrap(bridge).LaunchManagedGame(assemblyPath, args);
+        Console.WriteLine($"HOST_EXIT code={exitCode}");
+        return exitCode;
+    }
+    finally
+    {
+        Console.WriteLine($"HOST_SESSION elapsedMs={sessionTimer.ElapsedMilliseconds}; managedBytes={GC.GetTotalMemory(false)}; gc0={GC.CollectionCount(0)}; gc1={GC.CollectionCount(1)}; gc2={GC.CollectionCount(2)}");
+    }
 }
 catch (Exception exception)
 {
