@@ -120,6 +120,22 @@ export function NativeHomePage() {
           </Button>
         </div>
       </section>
+      <section className="panel workspace-overview">
+        <div className="workspace-section">
+          <div>
+            <h2>Runtime &amp; resources</h2>
+            <p>Terraria 1.4.4.9 · Android ARM64</p>
+          </div>
+          <Button className="quiet-action" onClick={environment}>
+            {t('运行环境检查')} <Icon name="chevron" />
+          </Button>
+        </div>
+        <div className="overview-stats">
+          <Button onClick={getTerraria}><strong>{status?.terraria || '—'}</strong><span>Terraria</span></Button>
+          <Button onClick={versions}><strong>{status?.tml || '—'}</strong><span>tModLoader</span></Button>
+          <Button onClick={environment}><strong>{status?.runtime ? 'OK' : '—'}</strong><span>Runtime</span></Button>
+        </div>
+      </section>
       {status?.error && (
         <div className="info-strip">
           <Icon name="info" />
