@@ -30,6 +30,7 @@ class GameActivity : SDLActivity() {
     private var crashSession: String? = null
     @Volatile private var failed = false
     private var bridgeAttached = false
+    private val failureDismissed = CountDownLatch(1)
 
     override fun getLibraries() =
         arrayOf("SDL3", "SDL2_compat", "FAudio_sdl3", "FNA3D_sdl3", "main")
@@ -107,7 +108,7 @@ class GameActivity : SDLActivity() {
     fun hideStartupStatus() {
         crashSession?.let { GameCrashReports.firstFrame(this, it) }
         startupVisible = false
-        startupOverlay.firstFrame {}
+        if (::startupOverlay.isInitialized) startupOverlay.firstFrame {}
     }
 
     fun enterImmersiveMode() {
@@ -200,10 +201,10 @@ class GameActivity : SDLActivity() {
                     .File(directory, "launcher-startup.log")
                     .appendText("${java.util.Date()}\n${failure.stackTraceToString()}\n")
             }
-            val dismissed = CountDownLatch(1)
+            val dismissed = failureDismissed
             val detail = failure.message ?: latestDetail
             Handler(Looper.getMainLooper()).post {
-                if (isFinishing || isDestroyed) dismissed.countDown()
+                if (isFinishing || isDestroyed || !::startupOverlay.isInitialized) dismissed.countDown()
                 else {
                     startupVisible = true
                     startupOverlay.failed(detail) {
@@ -221,6 +222,8 @@ class GameActivity : SDLActivity() {
     }
 
     override fun onDestroy() {
+        // Release the SDL thread before SDLActivity waits for it during teardown.
+        failureDismissed.countDown()
         if (!failed) crashSession?.let { GameCrashReports.normalExit(this, it) }
         if (::startupOverlay.isInitialized) startupOverlay.release()
         if (bridgeAttached) AndroidBridge.detach(this)
